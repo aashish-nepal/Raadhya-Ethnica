@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disallow admin routes
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://raadhyaethnica.com/sitemap.xml

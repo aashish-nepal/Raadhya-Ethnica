@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        (request.auth.token.admin == true || 
+         exists(/databases/$(database)/documents/customers/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/customers/$(request.auth.uid)).data.role == 'admin');
+    }
+    
+    // Products - public read, admin write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Orders - users can read their own, admin can read all
+    match /orders/{orderId} {
+      allow read: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null;
+      allow update: if isAdmin();
+    }
+    
+    // Customers - CRITICAL: authenticated users can read to check admin role
+    // Users can read/update their own, admins can read all and delete
+    match /customers/{customerId} {
+      allow read: if request.auth != null;  // Allow all authenticated users to read
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && (
+        // Users can update their own data BUT NOT their role
+        (request.auth.uid == customerId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        // Admins can update anything including roles
+        isAdmin()
+      );
+      allow delete: if isAdmin();  // Only admins can delete customers
+    }
+    
+    // Reviews - authenticated users can create, all can read
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Newsletter - anyone can subscribe
+    match /newsletter/{subscriberId} {
+      allow read, create: if true;
+    }
+    
+    // Coupons - public read, admin write
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Carts - users can only access their own cart
+    match /carts/{cartId} {
+      allow read, write: if request.auth != null && cartId == request.auth.uid;
+    }
+    
+    // Addresses - users can manage their own addresses
+    match /customers/{customerId}/addresses/{addressId} {
+      allow read, write: if request.auth != null && request.auth.uid == customerId;
+    }
+    
+    // Settings - admin only
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
