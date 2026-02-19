@@ -118,11 +118,13 @@ export default function OrdersPage() {
                                     <div className="text-sm text-neutral-600 space-y-1">
                                         <p>
                                             Placed on:{" "}
-                                            {new Date(order.createdAt).toLocaleDateString("en-AU", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                            })}
+                                            {(() => {
+                                                const raw = (order as any).createdAt;
+                                                const date = raw?.toDate ? raw.toDate() : raw ? new Date(raw) : null;
+                                                return date && !isNaN(date.getTime())
+                                                    ? date.toLocaleDateString("en-AU", { year: "numeric", month: "long", day: "numeric" })
+                                                    : "—";
+                                            })()}
                                         </p>
                                         <p>
                                             {order.items.length} item{order.items.length > 1 ? "s" : ""}

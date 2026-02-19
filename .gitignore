@@ -28,6 +28,10 @@ yarn-error.log*
 # Local env files
 .env
 .env.local
+.env.*.local
+
+# Firebase Service Account (contains private keys - NEVER commit this)
+firebase-service-account.json
 .env.development.local
 .env.test.local
 .env.production.local

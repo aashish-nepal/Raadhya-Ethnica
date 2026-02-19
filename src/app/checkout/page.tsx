@@ -203,6 +203,8 @@ export default function CheckoutPage() {
                                 name: i.productName,
                                 quantity: i.quantity,
                                 price: i.price,
+                                color: i.selectedColor || undefined,
+                                size: i.selectedSize || undefined,
                             })),
                             total: totals.total,
                             shippingAddress: `${shippingAddr.name}, ${shippingAddr.addressLine1}, ${shippingAddr.city}, ${shippingAddr.state} ${shippingAddr.pincode}`,

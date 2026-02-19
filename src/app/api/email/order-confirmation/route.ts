@@ -19,7 +19,13 @@ export async function POST(request: NextRequest) {
             orderNumber: orderDetails.orderId, // orderId used as orderNumber here
             customerName: orderDetails.customerName,
             customerEmail: email,
-            items: orderDetails.items,
+            items: orderDetails.items.map((item: any) => ({
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                color: item.color || item.selectedColor || undefined,
+                size: item.size || item.selectedSize || undefined,
+            })),
             total: orderDetails.total,
             shippingAddress: orderDetails.shippingAddress,
             paymentMethod: orderDetails.paymentMethod || "stripe",

@@ -41,7 +41,7 @@ export async function sendOrderConfirmationEmail(
   orderDetails: {
     orderId: string;
     customerName: string;
-    items: Array<{ name: string; quantity: number; price: number }>;
+    items: Array<{ name: string; quantity: number; price: number; color?: string; size?: string }>;
     total: number;
     shippingAddress: string;
     paymentMethod?: string;
@@ -52,11 +52,14 @@ export async function sendOrderConfirmationEmail(
       (item) => `
         <tr>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${item.name}</td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.color ? `<span style="display:inline-block;background:#f3e8ff;color:#7e22ce;padding:2px 8px;border-radius:12px;font-size:12px;">${item.color}</span>` : '<span style="color:#9ca3af;font-size:12px;">—</span>'}</td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.size ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;">${item.size}</span>` : '<span style="color:#9ca3af;font-size:12px;">—</span>'}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">$${item.price.toFixed(2)}</td>
         </tr>`
     )
     .join("");
+
 
   const html = `<!DOCTYPE html>
     <html>
@@ -79,6 +82,8 @@ export async function sendOrderConfirmationEmail(
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
             <thead><tr style="background:#f9fafb;">
               <th style="padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;">Item</th>
+              <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e5e7eb;">Color</th>
+              <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e5e7eb;">Size</th>
               <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e5e7eb;">Qty</th>
               <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #e5e7eb;">Price</th>
             </tr></thead>
@@ -118,7 +123,7 @@ export async function sendAdminOrderAlert(orderDetails: {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
-  items: Array<{ name: string; quantity: number; price: number }>;
+  items: Array<{ name: string; quantity: number; price: number; color?: string; size?: string }>;
   total: number;
   shippingAddress: string;
   paymentMethod: string;
@@ -129,6 +134,8 @@ export async function sendAdminOrderAlert(orderDetails: {
   const itemsHtml = orderDetails.items
     .map(item => `<tr>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;">${item.name}</td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.color ? `<span style="display:inline-block;background:#f3e8ff;color:#7e22ce;padding:2px 8px;border-radius:12px;font-size:12px;">${item.color}</span>` : '<span style="color:#9ca3af;font-size:12px;">—</span>'}</td>
+          <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.size ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;">${item.size}</span>` : '<span style="color:#9ca3af;font-size:12px;">—</span>'}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
           <td style="padding:8px;border-bottom:1px solid #e5e7eb;text-align:right;">$${item.price.toFixed(2)}</td>
         </tr>`).join("");
@@ -156,6 +163,8 @@ export async function sendAdminOrderAlert(orderDetails: {
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
             <thead><tr style="background:#f9fafb;">
               <th style="padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;font-size:13px;">Item</th>
+              <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e5e7eb;font-size:13px;">Color</th>
+              <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e5e7eb;font-size:13px;">Size</th>
               <th style="padding:10px 8px;text-align:center;border-bottom:2px solid #e5e7eb;font-size:13px;">Qty</th>
               <th style="padding:10px 8px;text-align:right;border-bottom:2px solid #e5e7eb;font-size:13px;">Price</th>
             </tr></thead>
