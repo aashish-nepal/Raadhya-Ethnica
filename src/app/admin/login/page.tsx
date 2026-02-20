@@ -16,9 +16,10 @@ export default function AdminLoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Redirect if already logged in as admin
+    // Redirect if already logged in as admin — but first ensure session cookie is set
     useEffect(() => {
         if (!authLoading && isAdmin) {
+            // useAdminAuth already called /api/auth/session, so we can navigate safely
             router.push("/admin");
         }
     }, [isAdmin, authLoading, router]);

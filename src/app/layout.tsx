@@ -14,6 +14,7 @@ import CartSyncProvider from "@/components/providers/CartSyncProvider";
 import NotificationProvider from "@/components/providers/NotificationProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
+import CookieConsent from "@/components/CookieConsent";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({
@@ -45,6 +46,7 @@ export default function RootLayout({
                         </main>
                         {!isAdminRoute && <Footer />}
                         <Toaster />
+                        {!isAdminRoute && <CookieConsent />}
                     </AuthProvider>
                 </SettingsProvider>
             </body>

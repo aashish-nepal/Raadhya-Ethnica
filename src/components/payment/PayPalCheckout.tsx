@@ -2,6 +2,7 @@
 
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { useState } from "react";
+import { getAuth } from "firebase/auth";
 
 interface PayPalCheckoutProps {
     amount: number;
@@ -28,10 +29,16 @@ export default function PayPalCheckout({
 
     const createOrder = async () => {
         try {
+            // Get fresh Firebase ID token — regular users don't have the admin __session cookie
+            const currentUser = getAuth().currentUser;
+            if (!currentUser) throw new Error("You must be logged in to pay.");
+            const idToken = await currentUser.getIdToken();
+
             const response = await fetch("/api/payment/paypal/create-order", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${idToken}`,
                 },
                 body: JSON.stringify({
                     amount,

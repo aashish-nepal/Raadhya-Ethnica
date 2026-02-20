@@ -1,42 +1,26 @@
 import * as admin from "firebase-admin";
 
+// Singleton guard — only initialize once across hot-reloads in dev
 if (!admin.apps.length) {
-    try {
-        // Validate required environment variables
-        const requiredEnvVars = {
-            FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
-            FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
-            FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
-        };
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-        const missingVars = Object.entries(requiredEnvVars)
-            .filter(([_, value]) => !value)
-            .map(([key]) => key);
-
-        if (missingVars.length > 0) {
-            throw new Error(
-                `Missing required Firebase Admin environment variables: ${missingVars.join(", ")}\n` +
-                `Please check your .env.local file.`
-            );
-        }
-
-        admin.initializeApp({
-            credential: admin.credential.cert({
-                projectId: requiredEnvVars.FIREBASE_PROJECT_ID!,
-                clientEmail: requiredEnvVars.FIREBASE_CLIENT_EMAIL!,
-                privateKey: requiredEnvVars.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-            }),
-        });
-
-        console.log("✅ Firebase Admin SDK initialized successfully");
-    } catch (error) {
-        console.error("❌ Firebase Admin initialization error:", error);
-
-        // In production, throw the error to prevent app from running with broken admin features
-        if (process.env.NODE_ENV === "production") {
-            throw error;
-        }
+    if (!projectId || !clientEmail || !privateKey) {
+        throw new Error(
+            "Firebase Admin SDK is missing required environment variables.\n" +
+            "Ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set in .env.local"
+        );
     }
+
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            // .env stores escaped newlines as \\n — convert to real newlines
+            privateKey: privateKey.replace(/\\n/g, "\n"),
+        }),
+    });
 }
 
 export const adminDb = admin.firestore();

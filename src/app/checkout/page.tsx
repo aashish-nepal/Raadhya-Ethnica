@@ -94,9 +94,20 @@ export default function CheckoutPage() {
     const createStripePaymentIntent = async () => {
         try {
             setLoading(true);
+
+            // Get a fresh Firebase ID token to authenticate this request
+            // Regular users don't have the admin __session cookie — they use Bearer tokens
+            const idToken = user ? await user.getIdToken() : null;
+            if (!idToken) {
+                throw new Error("You must be logged in to complete checkout.");
+            }
+
             const response = await fetch("/api/payment/stripe/create-intent", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${idToken}`,
+                },
                 body: JSON.stringify({
                     amount: totals.total,
                     currency: "USD",
