@@ -29,18 +29,28 @@ export const COLLECTIONS = {
 };
 
 // Settings Operations
+const DEFAULT_HERO = {
+    featuredProductId: "",
+    promoText: "✨ New Collection 2024",
+};
+
 export async function getStoreSettings() {
     const settingsRef = doc(db, COLLECTIONS.SETTINGS, "store-config");
     const snapshot = await getDoc(settingsRef);
 
     if (!snapshot.exists()) {
-        // Initialize default settings if not found
         await initializeDefaultSettings();
         const newSnapshot = await getDoc(settingsRef);
         return newSnapshot.exists() ? { id: newSnapshot.id, ...newSnapshot.data() } : null;
     }
 
-    return { id: snapshot.id, ...snapshot.data() };
+    const data = snapshot.data();
+    return {
+        id: snapshot.id,
+        ...data,
+        // Always ensure 'hero' exists by merging with defaults
+        hero: { ...DEFAULT_HERO, ...(data?.hero ?? {}) },
+    };
 }
 
 export async function updateStoreSettings(data: any) {
@@ -50,6 +60,73 @@ export async function updateStoreSettings(data: any) {
         updatedAt: new Date().toISOString(),
     });
 }
+
+export function subscribeToHeroSettings(
+    callback: (hero: { featuredProductId: string; promoText: string; bannerText: string; badgeLabel: string; badgeValue: string; announcementText: string }) => void
+) {
+    const settingsRef = doc(db, COLLECTIONS.SETTINGS, "store-config");
+    return onSnapshot(settingsRef, (snapshot) => {
+        const data = snapshot.exists() ? snapshot.data() : {};
+        callback({
+            featuredProductId: data?.hero?.featuredProductId ?? "",
+            promoText: data?.hero?.promoText ?? "✨ New Collection 2024",
+            bannerText: data?.hero?.bannerText ?? "⏰ Limited Time Offer: Flat 35% OFF on all kurtas | Ends in 2 days!",
+            badgeLabel: data?.hero?.badgeLabel ?? "Special Offer",
+            badgeValue: data?.hero?.badgeValue ?? "35% OFF",
+            announcementText: data?.hero?.announcementText ?? "🎉 Limited Time Offer: Flat 35% OFF on all kurtas | Free Shipping above $150",
+        });
+    });
+}
+
+export async function saveHeroSettings(heroData: { featuredProductId: string; promoText: string; bannerText: string; badgeLabel: string; badgeValue: string; announcementText: string }) {
+    const { setDoc } = await import("firebase/firestore");
+    const settingsRef = doc(db, COLLECTIONS.SETTINGS, "store-config");
+    await setDoc(settingsRef, {
+        hero: {
+            featuredProductId: heroData.featuredProductId,
+            promoText: heroData.promoText,
+            bannerText: heroData.bannerText,
+            badgeLabel: heroData.badgeLabel,
+            badgeValue: heroData.badgeValue,
+            announcementText: heroData.announcementText,
+        },
+        updatedAt: new Date().toISOString(),
+    }, { merge: true });
+}
+
+export interface CategoryGridItem {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    emoji: string;
+    imageUrl?: string;
+    visible: boolean;
+    order: number;
+}
+
+const DEFAULT_CATEGORIES: CategoryGridItem[] = [
+    { id: "cat-1", name: "Cotton Kurtas", slug: "cotton", description: "Comfortable and breathable cotton kurtas", emoji: "👗", imageUrl: "", visible: true, order: 1 },
+    { id: "cat-2", name: "Designer Kurtas", slug: "designer", description: "Premium designer kurtas with intricate embroidery", emoji: "🌸", imageUrl: "", visible: true, order: 2 },
+    { id: "cat-3", name: "Festive Wear", slug: "festive", description: "Elegant kurtas for festivals and special occasions", emoji: "✨", imageUrl: "", visible: true, order: 3 },
+    { id: "cat-4", name: "Office Wear", slug: "office", description: "Professional and stylish kurtas for the workplace", emoji: "💎", imageUrl: "", visible: true, order: 4 },
+    { id: "cat-5", name: "Casual Wear", slug: "casual", description: "Relaxed and comfortable kurtas for everyday style", emoji: "🎀", imageUrl: "", visible: true, order: 5 },
+];
+
+export async function saveCategorySettings(categories: CategoryGridItem[]) {
+    const { setDoc } = await import("firebase/firestore");
+    const settingsRef = doc(db, COLLECTIONS.SETTINGS, "store-config");
+    await setDoc(settingsRef, { categories, updatedAt: new Date().toISOString() }, { merge: true });
+}
+
+export function subscribeToCategorySettings(callback: (categories: CategoryGridItem[]) => void) {
+    const settingsRef = doc(db, COLLECTIONS.SETTINGS, "store-config");
+    return onSnapshot(settingsRef, (snapshot) => {
+        const data = snapshot.exists() ? snapshot.data() : {};
+        callback((data?.categories as CategoryGridItem[]) ?? DEFAULT_CATEGORIES);
+    });
+}
+
 
 export async function initializeDefaultSettings() {
     const { setDoc } = await import("firebase/firestore");

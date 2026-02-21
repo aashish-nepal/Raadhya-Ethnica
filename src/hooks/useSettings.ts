@@ -1,70 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getStoreSettings } from "@/lib/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import type { StoreSettings } from "@/types";
 
-let cachedSettings: StoreSettings | null = null;
-let settingsPromise: Promise<StoreSettings | null> | null = null;
-
+// Real-time subscription to store settings — updates all consumers instantly
 export function useSettings() {
-    const [settings, setSettings] = useState<StoreSettings | null>(cachedSettings);
-    const [loading, setLoading] = useState(!cachedSettings);
+    const [settings, setSettings] = useState<StoreSettings | null>(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        // If we already have cached settings, use them
-        if (cachedSettings) {
-            setSettings(cachedSettings);
-            setLoading(false);
-            return;
-        }
+        const settingsRef = doc(db, "settings", "store-config");
 
-        // If there's already a fetch in progress, wait for it
-        if (settingsPromise) {
-            settingsPromise
-                .then((data) => {
-                    setSettings(data);
-                    setLoading(false);
-                })
-                .catch((err) => {
-                    setError(err);
-                    setLoading(false);
-                });
-            return;
-        }
-
-        // Start a new fetch
-        setLoading(true);
-        settingsPromise = getStoreSettings()
-            .then((data) => {
-                cachedSettings = data as StoreSettings;
-                setSettings(cachedSettings);
+        const unsubscribe = onSnapshot(
+            settingsRef,
+            (snapshot) => {
+                if (snapshot.exists()) {
+                    setSettings({ id: snapshot.id, ...snapshot.data() } as StoreSettings);
+                } else {
+                    setSettings(null);
+                }
                 setLoading(false);
-                return cachedSettings;
-            })
-            .catch((err) => {
+            },
+            (err) => {
+                console.error("Settings subscription error:", err);
                 setError(err);
                 setLoading(false);
-                throw err;
-            })
-            .finally(() => {
-                settingsPromise = null;
-            });
+            }
+        );
+
+        return () => unsubscribe();
     }, []);
 
-    const refreshSettings = async () => {
-        setLoading(true);
-        try {
-            const data = await getStoreSettings();
-            cachedSettings = data as StoreSettings;
-            setSettings(cachedSettings);
-        } catch (err) {
-            setError(err as Error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // No-op kept for API compatibility with existing consumers
+    const refreshSettings = async () => { };
 
     return { settings, loading, error, refreshSettings };
 }

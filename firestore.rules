@@ -98,9 +98,10 @@ service cloud.firestore {
     }
 
     // ─── Settings ────────────────────────────────────────────────────────────
-    // Admin only
+    // Public read (used on home page hero section); admin write only
     match /settings/{settingId} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

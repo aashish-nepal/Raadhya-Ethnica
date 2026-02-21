@@ -1,26 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Store, Truck, CreditCard, Bell, Search, Package, FileText, Receipt, Loader2 } from "lucide-react";
+import { Save, Store, Truck, CreditCard, Bell, Search, Package, FileText, Receipt, Loader2, LayoutTemplate, Grid3X3, Plus, Trash2, GripVertical, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getStoreSettings, updateStoreSettings } from "@/lib/firestore";
-import type { StoreSettings } from "@/types";
+import { getStoreSettings, updateStoreSettings, getProducts, saveHeroSettings, subscribeToCategorySettings, saveCategorySettings, CategoryGridItem } from "@/lib/firestore";
+import type { StoreSettings, Product } from "@/types";
 
 export default function SettingsPage() {
     const [settings, setSettings] = useState<StoreSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState("store");
+    const [heroSaving, setHeroSaving] = useState(false);
+    const [categorySaving, setCategorySaving] = useState(false);
+    const [activeTab, setActiveTab] = useState("hero");
     const [successMessage, setSuccessMessage] = useState("");
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<CategoryGridItem[]>([]);
 
     useEffect(() => {
         loadSettings();
+        const unsub = subscribeToCategorySettings((cats) => setCategories(cats));
+        return () => unsub();
     }, []);
 
     const loadSettings = async () => {
         try {
-            const data = await getStoreSettings();
+            const [data, productsData] = await Promise.all([
+                getStoreSettings(),
+                getProducts(),
+            ]);
             setSettings(data as StoreSettings);
+            setProducts(productsData as Product[]);
         } catch (error) {
             console.error("Error loading settings:", error);
         } finally {
@@ -28,12 +38,49 @@ export default function SettingsPage() {
         }
     };
 
+    const handleCategorySave = async () => {
+        setCategorySaving(true);
+        try {
+            await saveCategorySettings(categories);
+            setSuccessMessage("Category grid saved!");
+            setTimeout(() => setSuccessMessage(""), 3000);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to save categories.");
+        } finally {
+            setCategorySaving(false);
+        }
+    };
+
+    const addCategory = () => {
+        const newCat: CategoryGridItem = {
+            id: `cat-${Date.now()}`,
+            name: "New Category",
+            slug: "new-category",
+            description: "",
+            emoji: "🛍️",
+            visible: true,
+            order: categories.length + 1,
+        };
+        setCategories([...categories, newCat]);
+    };
+
+    const updateCategory = (id: string, field: keyof CategoryGridItem, value: any) => {
+        setCategories(categories.map((c) => c.id === id ? { ...c, [field]: value } : c));
+    };
+
+    const removeCategory = (id: string) => {
+        setCategories(categories.filter((c) => c.id !== id).map((c, i) => ({ ...c, order: i + 1 })));
+    };
+
+    const toggleVisible = (id: string) => {
+        setCategories(categories.map((c) => c.id === id ? { ...c, visible: !c.visible } : c));
+    };
+
     const handleSave = async () => {
         if (!settings) return;
-
         setSaving(true);
         setSuccessMessage("");
-
         try {
             await updateStoreSettings(settings);
             setSuccessMessage("Settings saved successfully!");
@@ -43,6 +90,29 @@ export default function SettingsPage() {
             alert("Failed to save settings. Please try again.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleHeroSave = async () => {
+        if (!settings) return;
+        setHeroSaving(true);
+        setSuccessMessage("");
+        try {
+            await saveHeroSettings({
+                featuredProductId: settings.hero?.featuredProductId ?? "",
+                promoText: settings.hero?.promoText ?? "",
+                bannerText: settings.hero?.bannerText ?? "",
+                badgeLabel: settings.hero?.badgeLabel ?? "",
+                badgeValue: settings.hero?.badgeValue ?? "",
+                announcementText: settings.hero?.announcementText ?? "",
+            });
+            setSuccessMessage("Hero settings saved!");
+            setTimeout(() => setSuccessMessage(""), 3000);
+        } catch (error) {
+            console.error("Error saving hero settings:", error);
+            alert("Failed to save hero settings. Please try again.");
+        } finally {
+            setHeroSaving(false);
         }
     };
 
@@ -58,6 +128,8 @@ export default function SettingsPage() {
     };
 
     const tabs = [
+        { id: "hero", label: "Hero Section", icon: LayoutTemplate },
+        { id: "categories", label: "Category Grid", icon: Grid3X3 },
         { id: "store", label: "Store", icon: Store },
         { id: "shipping", label: "Shipping", icon: Truck },
         { id: "payment", label: "Payment", icon: CreditCard },
@@ -142,6 +214,233 @@ export default function SettingsPage() {
 
                 {/* Tab Content */}
                 <div className="p-8">
+                    {/* Hero Section Settings */}
+                    {activeTab === "hero" && (
+                        <div className="space-y-6">
+                            <h2 className="text-xl font-semibold mb-1">Hero Section</h2>
+                            <p className="text-sm text-neutral-500 mb-6">Control the featured product and promotional text shown on the home page hero.</p>
+
+                            {/* Featured Product */}
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Featured Product</label>
+                                <select
+                                    value={settings.hero?.featuredProductId ?? ""}
+                                    onChange={(e) => updateField("hero" as any, "featuredProductId", e.target.value)}
+                                    className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                                >
+                                    <option value="">— No featured product (use default placeholder) —</option>
+                                    {products.map((product) => (
+                                        <option key={product.id} value={product.id}>
+                                            {product.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-neutral-400 mt-1">The selected product&apos;s first image will display in the hero section.</p>
+                            </div>
+
+                            {/* Promotional Text — shared by badge AND banner */}
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Promotional Text</label>
+                                <input
+                                    type="text"
+                                    value={settings.hero?.promoText ?? ""}
+                                    onChange={(e) => updateField("hero" as any, "promoText", e.target.value)}
+                                    placeholder="e.g., ⏰ Limited Time Offer: Flat 35% OFF on all kurtas | Ends in 3 days!"
+                                    className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                                <p className="text-xs text-neutral-400 mt-1">This updates both the badge above the hero heading and the coloured banner strip below the hero.</p>
+                            </div>
+
+                            {/* Floating Badge */}
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-700 mb-2">Badge Label <span className="text-neutral-400 text-xs">(e.g. Special Offer)</span></label>
+                                    <input
+                                        type="text"
+                                        value={settings.hero?.badgeLabel ?? ""}
+                                        onChange={(e) => updateField("hero" as any, "badgeLabel", e.target.value)}
+                                        placeholder="e.g., Special Offer"
+                                        className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-neutral-700 mb-2">Badge Value <span className="text-neutral-400 text-xs">(e.g. 35% OFF)</span></label>
+                                    <input
+                                        type="text"
+                                        value={settings.hero?.badgeValue ?? ""}
+                                        onChange={(e) => updateField("hero" as any, "badgeValue", e.target.value)}
+                                        placeholder="e.g., 35% OFF"
+                                        className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Header Announcement Bar */}
+                            <div>
+                                <label className="block text-sm font-medium text-neutral-700 mb-2">Header Announcement Bar <span className="text-neutral-400 text-xs">(pink strip at very top of every page)</span></label>
+                                <input
+                                    type="text"
+                                    value={settings.hero?.announcementText ?? ""}
+                                    onChange={(e) => updateField("hero" as any, "announcementText", e.target.value)}
+                                    placeholder="e.g., 🎉 Limited Time Offer: Flat 35% OFF on all kurtas | Free Shipping above $150"
+                                    className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                                <p className="text-xs text-neutral-400 mt-1">This appears in the header announcement bar on every page of the website.</p>
+                            </div>
+
+                            {/* Dedicated Save */}
+                            <div className="pt-4">
+                                <Button onClick={handleHeroSave} disabled={heroSaving}>
+                                    {heroSaving ? (
+                                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</>
+                                    ) : (
+                                        <><Save className="w-4 h-4 mr-2" />Save Hero Settings</>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Category Grid Settings */}
+                    {activeTab === "categories" && (
+                        <div className="space-y-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-1">Category Grid</h2>
+                                    <p className="text-sm text-neutral-500">Configure which categories appear on the homepage. Changes update in real-time.</p>
+                                </div>
+                                <Button onClick={addCategory} size="sm" variant="outline" className="flex items-center gap-2">
+                                    <Plus size={15} /> Add Category
+                                </Button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {categories.sort((a, b) => a.order - b.order).map((cat) => {
+                                    // Get all images from products in this category
+                                    const categoryProducts = products.filter((p: any) =>
+                                        p.category?.toLowerCase().replace(/\s+/g, "-") === cat.slug ||
+                                        p.category?.toLowerCase() === cat.slug.replace(/-/g, " ")
+                                    );
+                                    const allImages: { url: string; productName: string }[] = [];
+                                    categoryProducts.forEach((p: any) => {
+                                        (p.images || []).forEach((img: string) => {
+                                            if (img) allImages.push({ url: img, productName: p.name });
+                                        });
+                                    });
+
+                                    return (
+                                        <div key={cat.id} className={`border rounded-xl overflow-hidden transition-all ${cat.visible ? "border-neutral-200 bg-white" : "border-neutral-100 bg-neutral-50 opacity-60"}`}>
+                                            {/* Card Header */}
+                                            <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
+                                                <GripVertical size={16} className="text-neutral-300 flex-shrink-0" />
+                                                {cat.imageUrl ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={cat.imageUrl} alt={cat.name} className="w-8 h-8 rounded-lg object-cover border border-neutral-200 flex-shrink-0" />
+                                                ) : (
+                                                    <span className="text-xl flex-shrink-0">{cat.emoji}</span>
+                                                )}
+                                                <span className="font-semibold text-neutral-900 flex-1 text-sm">{cat.name}</span>
+                                                <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-1 rounded-full">/{cat.slug}</span>
+                                                <button onClick={() => toggleVisible(cat.id)} className={`p-1.5 rounded-lg transition-colors ${cat.visible ? "text-emerald-600 hover:bg-emerald-50" : "text-neutral-400 hover:bg-neutral-100"}`} title={cat.visible ? "Hide" : "Show"}>
+                                                    {cat.visible ? <Eye size={16} /> : <EyeOff size={16} />}
+                                                </button>
+                                                <button onClick={() => removeCategory(cat.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-4 space-y-4">
+                                                {/* Text fields */}
+                                                <div className="grid sm:grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-neutral-600 mb-1">Name</label>
+                                                        <input type="text" value={cat.name} onChange={(e) => updateCategory(cat.id, "name", e.target.value)}
+                                                            className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-neutral-600 mb-1">Slug (URL filter)</label>
+                                                        <input type="text" value={cat.slug} onChange={(e) => updateCategory(cat.id, "slug", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                                                            className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-neutral-600 mb-1">Order</label>
+                                                        <input type="number" value={cat.order} min={1} onChange={(e) => updateCategory(cat.id, "order", Number(e.target.value))}
+                                                            className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                                                    </div>
+                                                    <div className="sm:col-span-3">
+                                                        <label className="block text-xs font-medium text-neutral-600 mb-1">Description</label>
+                                                        <input type="text" value={cat.description} onChange={(e) => updateCategory(cat.id, "description", e.target.value)}
+                                                            placeholder="Short description shown under the category name"
+                                                            className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+                                                    </div>
+                                                </div>
+
+                                                {/* Image Picker */}
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <label className="text-xs font-medium text-neutral-600">
+                                                            Category Image <span className="text-neutral-400 font-normal">— pick from {cat.name} products</span>
+                                                        </label>
+                                                        {cat.imageUrl && (
+                                                            <button onClick={() => updateCategory(cat.id, "imageUrl", "")} className="text-xs text-red-500 hover:text-red-700 font-medium">
+                                                                ✕ Clear image
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {allImages.length === 0 ? (
+                                                        <div className="border-2 border-dashed border-neutral-200 rounded-xl p-6 text-center">
+                                                            <p className="text-sm text-neutral-400 font-medium">No products found in this category</p>
+                                                            <p className="text-xs text-neutral-300 mt-1">Add products with category "{cat.slug}" to see images here</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 max-h-48 overflow-y-auto p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                                                            {allImages.map((img, i) => {
+                                                                const isSelected = cat.imageUrl === img.url;
+                                                                return (
+                                                                    <button
+                                                                        key={`${img.url}-${i}`}
+                                                                        onClick={() => updateCategory(cat.id, "imageUrl", isSelected ? "" : img.url)}
+                                                                        title={img.productName}
+                                                                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all focus:outline-none ${isSelected
+                                                                            ? "border-primary-500 ring-2 ring-primary-200 scale-105"
+                                                                            : "border-transparent hover:border-primary-300 hover:scale-105"
+                                                                            }`}
+                                                                    >
+                                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                        <img src={img.url} alt={img.productName} className="w-full h-full object-cover" />
+                                                                        {isSelected && (
+                                                                            <div className="absolute inset-0 bg-primary-500/20 flex items-center justify-center">
+                                                                                <div className="w-5 h-5 bg-primary-600 rounded-full flex items-center justify-center shadow">
+                                                                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                                    </svg>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="pt-2 flex items-center gap-3">
+                                <Button onClick={handleCategorySave} disabled={categorySaving}>
+                                    {categorySaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : <><Save className="w-4 h-4 mr-2" />Save Category Grid</>}
+                                </Button>
+                                <p className="text-xs text-neutral-400">Changes will appear on the homepage in real-time after saving.</p>
+                            </div>
+                        </div>
+                    )}
+
+
+
                     {/* Store Settings */}
                     {activeTab === "store" && (
                         <div className="space-y-6">
@@ -921,7 +1220,7 @@ export default function SettingsPage() {
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

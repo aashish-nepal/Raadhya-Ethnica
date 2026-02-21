@@ -313,8 +313,18 @@ export interface FirestoreCustomer extends Omit<User, 'createdAt'> {
 }
 
 // Store Settings Types
+export interface HeroSettings {
+    featuredProductId: string;
+    promoText: string;
+    bannerText: string;
+    badgeLabel: string;
+    badgeValue: string;
+    announcementText: string;
+}
+
 export interface StoreSettings {
     id: string;
+    hero?: HeroSettings;
     store: {
         name: string;
         tagline: string;
