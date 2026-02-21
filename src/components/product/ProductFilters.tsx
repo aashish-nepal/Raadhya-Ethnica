@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import categories from "@/data/categories.json";
+import { subscribeToCategorySettings, subscribeToProducts, CategoryGridItem } from "@/lib/firestore";
 
 interface FilterOptions {
     priceRange: [number, number];
@@ -28,18 +28,47 @@ export default function ProductFilters({ onFilterChange, onClose }: ProductFilte
         fabrics: [],
         rating: 0,
     });
+    const [categories, setCategories] = useState<CategoryGridItem[]>([]);
+    const [sizes, setSizes] = useState<string[]>([]);
+    const [colors, setColors] = useState<{ name: string; hex: string }[]>([]);
+    const [fabrics, setFabrics] = useState<string[]>([]);
 
-    const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-    const colors = [
-        { name: "Pink", hex: "#FFC0CB" },
-        { name: "Blue", hex: "#4A90E2" },
-        { name: "Yellow", hex: "#FFD700" },
-        { name: "Green", hex: "#90EE90" },
-        { name: "Red", hex: "#FF6B6B" },
-        { name: "White", hex: "#FFFFFF" },
-        { name: "Black", hex: "#000000" },
-    ];
-    const fabrics = ["Cotton", "Silk", "Rayon", "Georgette", "Chanderi", "Linen"];
+    // Live categories from admin settings
+    useEffect(() => {
+        const unsub = subscribeToCategorySettings((cats) =>
+            setCategories(cats.filter((c) => c.visible).sort((a, b) => a.order - b.order))
+        );
+        return () => unsub();
+    }, []);
+
+    // Derive sizes, colors, fabrics from actual product catalog
+    useEffect(() => {
+        const unsub = subscribeToProducts((products: any[]) => {
+            // Unique sizes (preserving natural order: XS → XXL)
+            const sizeOrder = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "FREE SIZE"];
+            const sizeSet = new Set<string>();
+            products.forEach((p) => (p.sizes || []).forEach((s: any) => s.size && sizeSet.add(s.size.toUpperCase())));
+            setSizes(sizeOrder.filter((s) => sizeSet.has(s)).concat([...sizeSet].filter((s) => !sizeOrder.includes(s))));
+
+            // Unique colors with hex (deduplicated by name)
+            const colorMap = new Map<string, string>();
+            products.forEach((p) =>
+                (p.colors || []).forEach((c: any) => {
+                    if (c.name && !colorMap.has(c.name.toLowerCase())) {
+                        colorMap.set(c.name.toLowerCase(), c.hex || "#cccccc");
+                    }
+                })
+            );
+            setColors([...colorMap.entries()].map(([name, hex]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), hex })).sort((a, b) => a.name.localeCompare(b.name)));
+
+            // Unique fabrics
+            const fabricSet = new Set<string>();
+            products.forEach((p) => p.fabric && fabricSet.add(p.fabric));
+            setFabrics([...fabricSet].sort());
+        });
+        return () => unsub();
+    }, []);
+
 
     const handleCategoryToggle = (categorySlug: string) => {
         const newCategories = filters.categories.includes(categorySlug)
@@ -181,8 +210,8 @@ export default function ProductFilters({ onFilterChange, onClose }: ProductFilte
                             key={size}
                             onClick={() => handleSizeToggle(size)}
                             className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${filters.sizes.includes(size)
-                                    ? "border-primary-500 bg-primary-50 text-primary-700"
-                                    : "border-neutral-300 hover:border-neutral-400"
+                                ? "border-primary-500 bg-primary-50 text-primary-700"
+                                : "border-neutral-300 hover:border-neutral-400"
                                 }`}
                         >
                             {size}
@@ -200,8 +229,8 @@ export default function ProductFilters({ onFilterChange, onClose }: ProductFilte
                             key={color.name}
                             onClick={() => handleColorToggle(color.name)}
                             className={`w-10 h-10 rounded-full border-2 transition-all ${filters.colors.includes(color.name)
-                                    ? "border-primary-500 scale-110"
-                                    : "border-neutral-300"
+                                ? "border-primary-500 scale-110"
+                                : "border-neutral-300"
                                 }`}
                             style={{ backgroundColor: color.hex }}
                             title={color.name}

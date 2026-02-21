@@ -127,6 +127,20 @@ export function subscribeToCategorySettings(callback: (categories: CategoryGridI
     });
 }
 
+export function subscribeToReviews(
+    callback: (reviews: any[]) => void,
+    maxCount: number = 6
+) {
+    const q = query(
+        collection(db, COLLECTIONS.REVIEWS),
+        orderBy("createdAt", "desc"),
+        limit(maxCount)
+    );
+    return onSnapshot(q, (snapshot) => {
+        const reviews = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        callback(reviews);
+    });
+}
 
 export async function initializeDefaultSettings() {
     const { setDoc } = await import("firebase/firestore");
