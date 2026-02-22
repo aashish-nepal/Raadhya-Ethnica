@@ -21,6 +21,7 @@ interface AuthContextType {
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string, name: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
     signIn: async () => { },
     signUp: async () => { },
     signInWithGoogle: async () => { },
+    resetPassword: async () => { },
     signOut: async () => { },
 });
 
@@ -153,6 +155,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const resetPassword = async (email: string) => {
+        // Use our custom API route so the email is sent via Gmail SMTP
+        // (from our own domain) instead of Firebase's noreply@firebaseapp.com.
+        const res = await fetch("/api/email/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Failed to send password reset email");
+        }
+    };
+
     const signOut = async () => {
         await firebaseSignOut(auth);
     };
@@ -163,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signInWithGoogle,
+        resetPassword,
         signOut,
     };
 

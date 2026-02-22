@@ -327,3 +327,42 @@ export async function sendShippingUpdateEmail(
     estimatedDelivery: shippingDetails.estimatedDelivery,
   });
 }
+
+// ─── Password Reset Email ──────────────────────────────────────────────────────
+export async function sendPasswordResetEmail(email: string, resetLink: string) {
+  const html = `<!DOCTYPE html>
+    <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:linear-gradient(135deg,#D946EF 0%,#C026D3 100%);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+          <h1 style="color:white;margin:0;font-size:28px;">Raadhya Ethnica</h1>
+        </div>
+        <div style="background:white;padding:30px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="display:inline-block;background:#fef3c7;color:#92400e;width:64px;height:64px;border-radius:50%;line-height:64px;font-size:32px;margin-bottom:12px;">&#128273;</div>
+            <h2 style="color:#111827;margin:0 0 8px;">Reset Your Password</h2>
+            <p style="color:#6b7280;margin:0;">We received a request to reset the password for your account.</p>
+          </div>
+          <p style="color:#374151;margin:0 0 24px;">Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${resetLink}" style="display:inline-block;background:#D946EF;color:white;padding:14px 36px;text-decoration:none;border-radius:6px;font-weight:600;font-size:16px;">Reset My Password</a>
+          </div>
+          <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:14px;border-radius:4px;margin-bottom:20px;">
+            <p style="margin:0;color:#991b1b;font-size:14px;"><strong>Didn't request this?</strong></p>
+            <p style="margin:6px 0 0;color:#991b1b;font-size:14px;">If you didn't request a password reset, you can safely ignore this email. Your password won't change.</p>
+          </div>
+          <p style="color:#9ca3af;font-size:12px;word-break:break-all;">Or copy this link into your browser:<br/><a href="${resetLink}" style="color:#D946EF;">${resetLink}</a></p>
+          <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb;">
+            <p style="color:#6b7280;font-size:13px;margin:0;">Questions? <a href="mailto:support@raadhyaethnica.com" style="color:#D946EF;">support@raadhyaethnica.com</a></p>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:20px;color:#9ca3af;font-size:12px;"><p>&#169; 2024 Raadhya Ethnica. All rights reserved.</p></div>
+      </body>
+    </html>`;
+
+  return sendEmail({
+    to: email,
+    subject: "Reset your Raadhya Ethnica password",
+    html,
+  });
+}
