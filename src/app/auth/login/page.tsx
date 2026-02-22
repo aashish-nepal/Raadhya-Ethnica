@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { getFirebaseAuthError } from "@/lib/firebase-errors";
 import { Mail, Lock, AlertCircle } from "lucide-react";
 
 function LoginPageContent() {
@@ -27,7 +28,7 @@ function LoginPageContent() {
             await signIn(email, password);
             router.push(redirectTo);
         } catch (err: any) {
-            setError(err.message || "Failed to sign in");
+            setError(getFirebaseAuthError(err));
         } finally {
             setLoading(false);
         }
@@ -41,7 +42,7 @@ function LoginPageContent() {
             await signInWithGoogle();
             router.push(redirectTo);
         } catch (err: any) {
-            setError(err.message || "Failed to sign in with Google");
+            setError(getFirebaseAuthError(err));
         } finally {
             setLoading(false);
         }

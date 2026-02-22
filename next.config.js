@@ -77,8 +77,8 @@ const nextConfig = {
                             "font-src 'self' https://fonts.gstatic.com data:",
                             // Images: self + data URIs + remote (Firebase Storage, etc.)
                             "img-src 'self' data: blob: https:",
-                            // Frames: Stripe + PayPal embedded iframes
-                            "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com",
+                            // Frames: Stripe + PayPal embedded iframes + Firebase auth redirect iframe
+                            "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.paypal.com https://www.sandbox.paypal.com https://raadhya-ethnica.firebaseapp.com",
                             // API/fetch connections
                             "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://api.stripe.com https://www.paypal.com https://api-m.paypal.com https://api-m.sandbox.paypal.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
                             // Object embeds
@@ -91,6 +91,15 @@ const nextConfig = {
                             'upgrade-insecure-requests',
                         ].join('; '),
                     },
+                ],
+            },
+            // Relax Cross-Origin-Opener-Policy on auth pages so signInWithPopup
+            // can communicate with the Google OAuth popup window (COOP blocks this
+            // on pages with the default same-origin policy).
+            {
+                source: '/auth/:path*',
+                headers: [
+                    { key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' },
                 ],
             },
         ];

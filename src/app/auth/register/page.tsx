@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { getFirebaseAuthError } from "@/lib/firebase-errors";
 import { User, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react";
 
 function RegisterPageContent() {
@@ -55,7 +56,7 @@ function RegisterPageContent() {
                 }
             }, 2000);
         } catch (err: any) {
-            setError(err.message || "Failed to create account");
+            setError(getFirebaseAuthError(err));
         } finally {
             setLoading(false);
         }

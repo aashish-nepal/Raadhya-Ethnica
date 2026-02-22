@@ -9,6 +9,7 @@ import {
     onAuthStateChanged,
     GoogleAuthProvider,
     signInWithPopup,
+    fetchSignInMethodsForEmail,
     updateProfile,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
@@ -128,8 +129,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        // onAuthStateChanged handles customer document creation
+        try {
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged handles customer document creation
+        } catch (err: any) {
+            if (err.code === "auth/account-exists-with-different-credential") {
+                // The email is registered with a different provider (e.g. email/password).
+                // Find out which sign-in methods exist for this email.
+                const email = err.customData?.email;
+                const methods = email
+                    ? await fetchSignInMethodsForEmail(auth, email).catch(() => [])
+                    : [];
+
+                const usesPassword = methods.includes("password");
+                const hint = usesPassword
+                    ? "This email is already registered with a password. Please sign in with your email and password instead."
+                    : "This email is already registered with a different sign-in method. Please use that method to sign in.";
+
+                throw new Error(hint);
+            }
+            // Re-throw any other errors as-is
+            throw err;
+        }
     };
 
     const signOut = async () => {
