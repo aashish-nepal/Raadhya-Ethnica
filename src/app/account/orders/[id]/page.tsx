@@ -8,6 +8,7 @@ import { ArrowLeft, Package, MapPin, CreditCard, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Order } from "@/types";
 import Image from "next/image";
+import { formatPrice } from "@/lib/utils";
 
 export default function OrderDetailPage() {
     const router = useRouter();
@@ -103,6 +104,7 @@ export default function OrderDetailPage() {
                                             src={item.productImage}
                                             alt={item.productName}
                                             fill
+                                            sizes="80px"
                                             className="object-cover"
                                         />
                                     </div>
@@ -116,9 +118,9 @@ export default function OrderDetailPage() {
                                         </p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold">${item.total.toFixed(2)}</p>
+                                        <p className="font-semibold">{formatPrice(item.total)}</p>
                                         <p className="text-sm text-neutral-600">
-                                            ${item.price.toFixed(2)} each
+                                            {formatPrice(item.price)} each
                                         </p>
                                     </div>
                                 </div>
@@ -155,26 +157,26 @@ export default function OrderDetailPage() {
                         <div className="space-y-3">
                             <div className="flex justify-between text-neutral-600">
                                 <span>Subtotal</span>
-                                <span>${order.subtotal.toFixed(2)}</span>
+                                <span>{formatPrice(order.subtotal)}</span>
                             </div>
                             {order.discount > 0 && (
                                 <div className="flex justify-between text-green-600">
                                     <span>Discount</span>
-                                    <span>-${order.discount.toFixed(2)}</span>
+                                    <span>-{formatPrice(order.discount)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-neutral-600">
                                 <span>Shipping</span>
-                                <span>${order.shipping.toFixed(2)}</span>
+                                <span>{formatPrice(order.shipping)}</span>
                             </div>
                             <div className="flex justify-between text-neutral-600">
                                 <span>Tax</span>
-                                <span>${order.tax.toFixed(2)}</span>
+                                <span>{formatPrice(order.tax)}</span>
                             </div>
                             <div className="pt-3 border-t border-neutral-200">
                                 <div className="flex justify-between text-lg font-bold">
                                     <span>Total</span>
-                                    <span>${order.total.toFixed(2)}</span>
+                                    <span>{formatPrice(order.total)}</span>
                                 </div>
                             </div>
                         </div>

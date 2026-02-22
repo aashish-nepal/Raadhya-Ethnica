@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const intentSchema = z.object({
     amount: z.number().positive().max(999999), // max ~$9,999.99
-    currency: z.string().length(3).default("USD"),
+    currency: z.string().length(3).default("AUD"),
     metadata: z.record(z.string()).optional(),
     customerEmail: z.string().email().optional(),
 });

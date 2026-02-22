@@ -52,6 +52,13 @@ export default function CheckoutPage() {
         }
     }, [user, authLoading, router]);
 
+    // Redirect to cart if cart is empty (must be in useEffect, not render phase)
+    useEffect(() => {
+        if (!authLoading && user && items.length === 0) {
+            router.push("/cart");
+        }
+    }, [items.length, user, authLoading, router]);
+
     // Load user addresses
     useEffect(() => {
         async function loadAddresses() {
@@ -110,7 +117,7 @@ export default function CheckoutPage() {
                 },
                 body: JSON.stringify({
                     amount: totals.total,
-                    currency: "USD",
+                    currency: "AUD",
                     customerEmail: user?.email,
                     metadata: {
                         userId: user?.uid || "",
@@ -194,7 +201,7 @@ export default function CheckoutPage() {
                 shipping: totals.shipping,
                 tax: totals.tax,
                 total: totals.total,
-                currency: 'USD',
+                currency: 'AUD',
                 discount: 0,
             });
 
@@ -202,26 +209,31 @@ export default function CheckoutPage() {
                 console.log('✅ Order created:', orderResult.orderNumber);
 
                 // Send order confirmation email (fire-and-forget — don't block redirect)
-                fetch('/api/email/order-confirmation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: user.email,
-                        orderDetails: {
-                            orderId: orderResult.orderNumber,
-                            customerName: user.displayName || shippingAddr.name,
-                            items: orderItems.map(i => ({
-                                name: i.productName,
-                                quantity: i.quantity,
-                                price: i.price,
-                                color: i.selectedColor || undefined,
-                                size: i.selectedSize || undefined,
-                            })),
-                            total: totals.total,
-                            shippingAddress: `${shippingAddr.name}, ${shippingAddr.addressLine1}, ${shippingAddr.city}, ${shippingAddr.state} ${shippingAddr.pincode}`,
-                            paymentMethod,
+                user.getIdToken().then((idToken) => {
+                    fetch('/api/email/order-confirmation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${idToken}`,
                         },
-                    }),
+                        body: JSON.stringify({
+                            email: user.email,
+                            orderDetails: {
+                                orderId: orderResult.orderNumber,
+                                customerName: user.displayName || shippingAddr.name,
+                                items: orderItems.map(i => ({
+                                    name: i.productName,
+                                    quantity: i.quantity,
+                                    price: i.price,
+                                    color: i.selectedColor || undefined,
+                                    size: i.selectedSize || undefined,
+                                })),
+                                total: totals.total,
+                                shippingAddress: `${shippingAddr.name}, ${shippingAddr.addressLine1}, ${shippingAddr.city}, ${shippingAddr.state} ${shippingAddr.pincode}`,
+                                paymentMethod,
+                            },
+                        }),
+                    }).catch(console.error);
                 }).catch(console.error);
 
                 // Clear cart from local storage
@@ -263,12 +275,7 @@ export default function CheckoutPage() {
         );
     }
 
-    if (!user) {
-        return null;
-    }
-
-    if (items.length === 0) {
-        router.push("/cart");
+    if (!user || items.length === 0) {
         return null;
     }
 

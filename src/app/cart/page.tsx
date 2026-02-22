@@ -12,13 +12,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Minus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { validateCoupon } from "@/lib/firestore";
 
 export default function CartPage() {
     const router = useRouter();
     const { user } = useAuth();
-    const { items, updateQuantity, removeItem, getTotals } = useCartStore();
+    const { items, updateQuantity, removeItem, getTotals, applyCoupon, removeCoupon, couponCode } = useCartStore();
     const totals = getTotals();
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [couponInput, setCouponInput] = useState("");
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [couponMsg, setCouponMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+    const handleApplyCoupon = async () => {
+        const code = couponInput.trim();
+        if (!code) return;
+        setCouponLoading(true);
+        setCouponMsg(null);
+        try {
+            const result = await validateCoupon(code);
+            if (!result.valid) {
+                setCouponMsg({ type: "error", text: (result as any).message || "Invalid coupon code" });
+            } else {
+                const coupon = (result as any).coupon;
+                const discountAmount =
+                    coupon.discountType === "percentage"
+                        ? (totals.subtotal * coupon.discountValue) / 100
+                        : coupon.discountValue;
+                applyCoupon(code, discountAmount);
+                setCouponMsg({ type: "success", text: `Coupon applied! You saved ${formatPrice(discountAmount)}.` });
+                setCouponInput("");
+            }
+        } catch {
+            setCouponMsg({ type: "error", text: "Failed to validate coupon. Please try again." });
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        removeCoupon();
+        setCouponMsg(null);
+        setCouponInput("");
+    };
+
 
     const handleProceedToCheckout = () => {
         if (user) {
@@ -68,6 +105,7 @@ export default function CartPage() {
                                                 src={item.product.images[0]}
                                                 alt={item.product.name}
                                                 fill
+                                                sizes="96px"
                                                 className="object-cover"
                                             />
                                         </div>
@@ -130,8 +168,35 @@ export default function CartPage() {
 
                                 {/* Coupon Code */}
                                 <div className="mb-4">
-                                    <Input placeholder="Enter coupon code" />
-                                    <Button variant="outline" className="w-full mt-2">Apply Coupon</Button>
+                                    {couponCode ? (
+                                        <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                            <span className="text-sm text-green-700 font-medium">🏷️ <strong>{couponCode}</strong> applied</span>
+                                            <button onClick={handleRemoveCoupon} className="text-xs text-red-500 hover:text-red-700 ml-2">Remove</button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    placeholder="Enter coupon code"
+                                                    value={couponInput}
+                                                    onChange={(e) => setCouponInput(e.target.value)}
+                                                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={handleApplyCoupon}
+                                                    disabled={couponLoading || !couponInput.trim()}
+                                                >
+                                                    {couponLoading ? "..." : "Apply"}
+                                                </Button>
+                                            </div>
+                                            {couponMsg && (
+                                                <p className={`text-xs mt-1 ${couponMsg.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                                                    {couponMsg.text}
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="border-t border-neutral-200 pt-4 space-y-3">

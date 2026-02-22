@@ -106,14 +106,12 @@ function ProductsPageContent() {
             result = result.filter((product) => product.rating >= filters.rating);
         }
 
-        setFilteredProducts(result);
+        setFilteredProducts(applySortOrder(result, sortBy));
     };
 
-    const handleSortChange = (newSortBy: string) => {
-        setSortBy(newSortBy);
-        let sorted = [...filteredProducts];
-
-        switch (newSortBy) {
+    const applySortOrder = (products: any[], sortKey: string) => {
+        const sorted = [...products];
+        switch (sortKey) {
             case "price-asc":
                 sorted.sort((a, b) => a.price - b.price);
                 break;
@@ -130,11 +128,14 @@ function ProductsPageContent() {
                 sorted.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
                 break;
             default:
-                // Featured - no sorting
                 break;
         }
+        return sorted;
+    };
 
-        setFilteredProducts(sorted);
+    const handleSortChange = (newSortBy: string) => {
+        setSortBy(newSortBy);
+        setFilteredProducts(applySortOrder(filteredProducts, newSortBy));
     };
 
     return (

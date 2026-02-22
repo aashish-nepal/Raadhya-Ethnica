@@ -1,7 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminAuth } from "@/lib/firebase-admin";
 import { sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
+    // Require a valid Firebase ID token — only authenticated users can trigger emails
+    const authHeader = request.headers.get("Authorization");
+    const idToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+    if (!idToken) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        await adminAuth.verifyIdToken(idToken);
+    } catch {
+        return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
+    }
+
     try {
         const body = await request.json();
         const { email, orderDetails } = body;
@@ -16,7 +31,7 @@ export async function POST(request: NextRequest) {
         // Send alert to admin (fire-and-forget, don't fail if admin email missing)
         sendAdminOrderAlert({
             orderId: orderDetails.orderId,
-            orderNumber: orderDetails.orderId, // orderId used as orderNumber here
+            orderNumber: orderDetails.orderId,
             customerName: orderDetails.customerName,
             customerEmail: email,
             items: orderDetails.items.map((item: any) => ({

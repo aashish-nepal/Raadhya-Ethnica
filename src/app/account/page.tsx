@@ -8,6 +8,7 @@ import { subscribeToUserOrders } from "@/lib/firestore";
 import { Package, Heart, MapPin, Settings, LogOut, Eye, Clock, CheckCircle, Truck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Order } from "@/types";
+import { formatPrice } from "@/lib/utils";
 
 export default function AccountPage() {
     const router = useRouter();
@@ -177,7 +178,7 @@ export default function AccountPage() {
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-lg font-bold text-neutral-900">
-                                                    ${order.total.toFixed(2)}
+                                                    {formatPrice(order.total)}
                                                 </span>
                                                 <Button
                                                     variant="outline"

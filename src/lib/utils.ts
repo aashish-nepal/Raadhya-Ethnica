@@ -12,9 +12,10 @@ export function cn(...inputs: ClassValue[]) {
  * Format price in Australian Dollars
  */
 export function formatPrice(price: number): string {
-    return new Intl.NumberFormat('en-AU', {
+    return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'AUD',
+        currencyDisplay: 'symbol',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(price);
@@ -81,16 +82,18 @@ export function isValidEmail(email: string): boolean {
  * Validate Indian phone number
  */
 export function isValidPhone(phone: string): boolean {
-    const phoneRegex = /^[6-9]\d{9}$/;
+    // Australian mobile: 04xxxxxxxx (10 digits) or +614xxxxxxxx
+    const phoneRegex = /^(04\d{8}|\+614\d{8})$/;
     return phoneRegex.test(phone.replace(/\s/g, ''));
 }
 
 /**
  * Validate Indian pincode
  */
-export function isValidPincode(pincode: string): boolean {
-    const pincodeRegex = /^[1-9][0-9]{5}$/;
-    return pincodeRegex.test(pincode);
+export function isValidPincode(postcode: string): boolean {
+    // Australian postcode: 4 digits
+    const postcodeRegex = /^[0-9]{4}$/;
+    return postcodeRegex.test(postcode.replace(/\s/g, ''));
 }
 
 /**
@@ -98,8 +101,9 @@ export function isValidPincode(pincode: string): boolean {
  */
 export function formatPhone(phone: string): string {
     const cleaned = phone.replace(/\D/g, '');
-    if (cleaned.length === 10) {
-        return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    // Australian mobile: 04xxxxxxxx → +61 4xx xxx xxx
+    if (cleaned.length === 10 && cleaned.startsWith('04')) {
+        return `+61 ${cleaned.slice(1, 4)} ${cleaned.slice(4, 7)} ${cleaned.slice(7)}`;
     }
     return phone;
 }

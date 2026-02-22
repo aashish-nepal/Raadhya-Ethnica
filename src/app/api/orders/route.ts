@@ -12,13 +12,9 @@ async function requireAdmin() {
     const session = await getSessionFromCookies();
     if (!session) return null;
 
-    const snap = await adminDb
-        .collection("customers")
-        .where("email", "==", session.email)
-        .limit(1)
-        .get();
-
-    if (snap.empty || snap.docs[0].data().role !== "admin") return null;
+    // Use UID as document ID — O(1) lookup, more robust than email query
+    const doc = await adminDb.collection("customers").doc(session.uid).get();
+    if (!doc.exists || doc.data()?.role !== "admin") return null;
     return session;
 }
 

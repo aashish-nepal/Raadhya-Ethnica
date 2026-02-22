@@ -5,20 +5,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, Package, Truck, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCartStore } from "@/store/cartStore";
 
 function OrderConfirmationContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get("orderId");
-    const clearCart = useCartStore((state) => state.clearCart);
 
     useEffect(() => {
-        // Clear cart after successful order
-        if (orderId) {
-            clearCart();
+        // Redirect to home if no orderId (direct navigation)
+        if (!orderId) {
+            router.push("/");
         }
-    }, [orderId, clearCart]);
+    }, [orderId, router]);
 
     if (!orderId) {
         router.push("/");

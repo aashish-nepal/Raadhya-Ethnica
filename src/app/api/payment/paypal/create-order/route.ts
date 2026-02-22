@@ -21,7 +21,7 @@ const addressSchema = z.object({
 
 const orderSchema = z.object({
     amount: z.number().positive().max(999999),
-    currency: z.string().length(3).default("USD"),
+    currency: z.string().length(3).default("AUD"),
     items: z.array(itemSchema).min(1).max(100),
     shippingAddress: addressSchema.optional(),
 });

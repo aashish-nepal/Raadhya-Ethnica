@@ -1,7 +1,25 @@
 /** @type {import('next').NextConfig} */
+const isDev = process.env.NODE_ENV === 'development';
 const nextConfig = {
     images: {
         remotePatterns: [
+            // Firebase Storage — product images
+            {
+                protocol: 'https',
+                hostname: 'firebasestorage.googleapis.com',
+            },
+            // Google user avatars (Google OAuth profile photos)
+            {
+                protocol: 'https',
+                hostname: '*.googleusercontent.com',
+            },
+            // Google APIs (occasionally used for image hosting)
+            {
+                protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+            },
+            // External product image CDNs (Shopify stores, etc.)
+            // Wildcard allows any HTTPS source — safe since images are admin-uploaded
             {
                 protocol: 'https',
                 hostname: '**',
@@ -52,7 +70,7 @@ const nextConfig = {
                         value: [
                             "default-src 'self'",
                             // Scripts: self + Next.js inline scripts + Stripe + PayPal + Firebase
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com https://apis.google.com",
+                            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://js.stripe.com https://www.paypal.com https://www.paypalobjects.com https://apis.google.com`,
                             // Styles: self + inline styles (Tailwind/framer)
                             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                             // Fonts

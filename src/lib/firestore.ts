@@ -73,7 +73,7 @@ export function subscribeToHeroSettings(
             bannerText: data?.hero?.bannerText ?? "⏰ Limited Time Offer: Flat 35% OFF on all kurtas | Ends in 2 days!",
             badgeLabel: data?.hero?.badgeLabel ?? "Special Offer",
             badgeValue: data?.hero?.badgeValue ?? "35% OFF",
-            announcementText: data?.hero?.announcementText ?? "🎉 Limited Time Offer: Flat 35% OFF on all kurtas | Free Shipping above $150",
+            announcementText: data?.hero?.announcementText ?? "🎉 Limited Time Offer: Flat 35% OFF on all kurtas | Free Shipping above A$150",
         });
     });
 }

@@ -27,7 +27,6 @@ export default function ProductDetailClient({ product: initialProduct }: Product
     const toggleWishlist = useWishlistStore((state) => state.toggleItem);
     const { settings } = useSettingsContext();
 
-    const currencySymbol = settings?.store.currencySymbol || "$";
     const lowStockThreshold = settings?.inventory.lowStockThreshold || 10;
 
     // Subscribe to real-time product updates
@@ -158,12 +157,12 @@ export default function ProductDetailClient({ product: initialProduct }: Product
                     {/* Price */}
                     <div className="flex items-center gap-3 mb-6">
                         <span className="text-3xl font-bold text-neutral-900">
-                            {currencySymbol}{product.price.toFixed(2)}
+                            {formatPrice(product.price)}
                         </span>
                         {product.originalPrice > product.price && (
                             <>
                                 <span className="text-xl text-neutral-500 line-through">
-                                    {currencySymbol}{product.originalPrice.toFixed(2)}
+                                    {formatPrice(product.originalPrice)}
                                 </span>
                                 <Badge variant="success">{product.discount}% OFF</Badge>
                             </>
@@ -283,7 +282,7 @@ export default function ProductDetailClient({ product: initialProduct }: Product
                     <div className="border-t border-neutral-200 pt-6 space-y-3">
                         <div className="flex items-center gap-3 text-sm">
                             <Truck size={20} className="text-primary-600" />
-                            <span>Free shipping on orders above {currencySymbol}{settings?.shipping.freeShippingThreshold || 100}</span>
+                            <span>Free shipping on orders above {formatPrice(settings?.shipping.freeShippingThreshold || 100)}</span>
                         </div>
                         <div className="flex items-center gap-3 text-sm">
                             <RotateCcw size={20} className="text-primary-600" />

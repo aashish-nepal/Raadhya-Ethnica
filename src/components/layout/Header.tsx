@@ -12,7 +12,7 @@ import { useEffect, useState, useRef } from "react";
 import SearchBar from "@/components/product/SearchBar";
 import { subscribeToHeroSettings } from "@/lib/firestore";
 
-const MARQUEE_TEXT = "🎉 Flat 35% OFF on all kurtas · Free Shipping above $150 · New collection is LIVE · ";
+const MARQUEE_TEXT = "🎉 Flat 35% OFF on all kurtas · Free Shipping above A$150 · New collection is LIVE · ";
 
 export default function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

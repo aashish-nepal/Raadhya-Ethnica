@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
-import { formatPrice as formatPriceUtil } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { useSettingsContext } from "@/contexts/SettingsContext";
 import { useState } from "react";
 
@@ -23,7 +23,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     const addToCart = useCartStore((state) => state.addItem);
     const { settings } = useSettingsContext();
 
-    const currencySymbol = settings?.store.currencySymbol || "$";
     const lowStockThreshold = settings?.inventory.lowStockThreshold || 10;
 
     const isLowStock = product.inStock && product.stockCount > 0 && product.stockCount <= lowStockThreshold;
@@ -58,6 +57,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                             src={product.images[0]}
                             alt={product.name}
                             fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={() => setImageError(true)}
                         />
@@ -153,11 +153,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                     {/* Price */}
                     <div className="flex items-center gap-2">
                         <span className="text-xl font-bold text-neutral-900">
-                            {currencySymbol}{product.price.toFixed(2)}
+                            {formatPrice(product.price)}
                         </span>
                         {product.originalPrice > product.price && (
                             <span className="text-sm text-neutral-500 line-through">
-                                {currencySymbol}{product.originalPrice.toFixed(2)}
+                                {formatPrice(product.originalPrice)}
                             </span>
                         )}
                     </div>
