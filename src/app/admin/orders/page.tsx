@@ -107,26 +107,43 @@ function OrderDrawer({ order, onClose }: { order: any; onClose: () => void }) {
                         </h3>
                         <div className="space-y-2">
                             {(order.items || []).map((item: any, i: number) => (
-                                <div key={i} className="flex items-start justify-between p-3 bg-neutral-50 rounded-xl">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-neutral-900">{item.productName || item.name}</p>
-                                        <div className="flex flex-wrap gap-1 mt-1">
+                                <div key={i} className="flex items-start gap-3 p-3 bg-neutral-50 rounded-xl">
+                                    {/* Product thumbnail */}
+                                    {(item.productImage) && (
+                                        <div className="w-14 h-18 flex-shrink-0 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100" style={{ height: "72px" }}>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={item.productImage}
+                                                alt={item.productName || item.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    {/* Details */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-neutral-900 leading-tight">{item.productName || item.name}</p>
+                                        <div className="flex flex-wrap gap-1 mt-1.5">
                                             {(item.selectedColor || item.color) && (
-                                                <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-medium">
-                                                    🎨 {item.selectedColor || item.color}
+                                                <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                                                    <span
+                                                        className="w-2 h-2 rounded-full border border-purple-300 flex-shrink-0"
+                                                        style={{ backgroundColor: item.colorHex || (item.selectedColor || item.color).toLowerCase() }}
+                                                    />
+                                                    {item.selectedColor || item.color}
                                                 </span>
                                             )}
                                             {(item.selectedSize || item.size) && (
                                                 <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-semibold">
-                                                    📐 {item.selectedSize || item.size}
+                                                    Size: {item.selectedSize || item.size}
                                                 </span>
                                             )}
-                                            <span className="bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full text-[10px]">
-                                                ×{item.quantity}
+                                            <span className="bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                                                Qty: {item.quantity}
                                             </span>
                                         </div>
                                     </div>
-                                    <p className="text-sm font-bold text-neutral-900 ml-3">${(item.price * item.quantity).toFixed(2)}</p>
+                                    {/* Line total */}
+                                    <p className="text-sm font-bold text-neutral-900 flex-shrink-0">${(item.price * item.quantity).toFixed(2)}</p>
                                 </div>
                             ))}
                         </div>

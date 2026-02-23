@@ -11,6 +11,8 @@ import NotificationProvider from "@/components/providers/NotificationProvider";
 import { Toaster } from "@/components/ui/toaster";
 import CookieConsent from "@/components/CookieConsent";
 import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
+import { ModalProvider } from "@/contexts/ModalContext";
+import NewsletterAutoShow from "@/components/ui/modals/NewsletterAutoShow";
 
 export const metadata: Metadata = {
     title: "Raadhya Ethnica - Authentic Indian Ethnic Wear",
@@ -35,14 +37,17 @@ export default function RootLayout({
                 <SettingsProvider>
                     <Analytics />
                     <AuthProvider>
-                        <WishlistSyncProvider />
-                        <CartSyncProvider />
-                        <NotificationProvider />
-                        <ClientLayoutWrapper>
-                            {children}
-                        </ClientLayoutWrapper>
-                        <Toaster />
-                        <CookieConsent />
+                        <ModalProvider>
+                            <WishlistSyncProvider />
+                            <CartSyncProvider />
+                            <NotificationProvider />
+                            <NewsletterAutoShow />
+                            <ClientLayoutWrapper>
+                                {children}
+                            </ClientLayoutWrapper>
+                            <Toaster />
+                            <CookieConsent />
+                        </ModalProvider>
                     </AuthProvider>
                 </SettingsProvider>
             </body>

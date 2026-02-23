@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
 import { subscribeToUserOrders } from "@/lib/firestore";
 import { Package, Heart, MapPin, Settings, LogOut, Eye, Clock, CheckCircle, Truck, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { formatPrice } from "@/lib/utils";
 export default function AccountPage() {
     const router = useRouter();
     const { user, loading, signOut } = useAuth();
+    const { openModal } = useModal();
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
     const [ordersLoading, setOrdersLoading] = useState(true);
 
@@ -34,9 +36,13 @@ export default function AccountPage() {
         return () => unsubscribe();
     }, [user]);
 
-    const handleSignOut = async () => {
-        await signOut();
-        router.push("/");
+    const handleSignOut = () => {
+        openModal("sign-out", {
+            onConfirm: async () => {
+                await signOut();
+                router.push("/");
+            },
+        });
     };
 
     const getStatusIcon = (status: string) => {

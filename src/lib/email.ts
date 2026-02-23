@@ -366,3 +366,117 @@ export async function sendPasswordResetEmail(email: string, resetLink: string) {
     html,
   });
 }
+
+// ─── New Arrival Notification (bulk) ─────────────────────────────────────────
+export async function sendNewArrivalEmail(
+  emails: string[],
+  product: {
+    name: string;
+    price: number;
+    originalPrice?: number;
+    discount?: number;
+    imageUrl?: string;
+    slug: string;
+    shortDescription?: string;
+  }
+) {
+  if (!emails.length) return { success: true, sent: 0 };
+
+  const shopUrl = `${process.env.NEXT_PUBLIC_APP_URL}/products/${product.slug}`;
+  const discountBadge =
+    product.discount && product.discount > 0
+      ? `<div style="display:inline-block;background:#D946EF;color:white;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:16px;">${product.discount}% OFF</div>`
+      : "";
+
+  const html = `<!DOCTYPE html>
+    <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:linear-gradient(135deg,#D946EF 0%,#C026D3 100%);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+          <p style="color:rgba(255,255,255,0.9);margin:0 0 6px;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Raadhya Ethnica</p>
+          <h1 style="color:white;margin:0;font-size:30px;">✨ New Arrival!</h1>
+          <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:15px;">Something beautiful just landed in our store</p>
+        </div>
+        <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          ${product.imageUrl ? `<div style="text-align:center;margin-bottom:24px;"><img src="${product.imageUrl}" alt="${product.name}" style="max-width:280px;width:100%;border-radius:12px;object-fit:cover;"/></div>` : ""}
+          <div style="text-align:center;margin-bottom:24px;">
+            ${discountBadge}
+            <h2 style="color:#111827;margin:0 0 8px;font-size:22px;">${product.name}</h2>
+            ${product.shortDescription ? `<p style="color:#6b7280;margin:0 0 12px;">${product.shortDescription}</p>` : ""}
+            <div style="display:flex;justify-content:center;gap:12px;align-items:baseline;flex-wrap:wrap;">
+              <span style="font-size:24px;font-weight:700;color:#D946EF;">A$${product.price.toFixed(2)}</span>
+              ${product.originalPrice && product.originalPrice > product.price ? `<span style="font-size:16px;color:#9ca3af;text-decoration:line-through;">A$${product.originalPrice.toFixed(2)}</span>` : ""}
+            </div>
+          </div>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${shopUrl}" style="display:inline-block;background:#D946EF;color:white;padding:14px 40px;text-decoration:none;border-radius:8px;font-weight:700;font-size:16px;">Shop Now →</a>
+          </div>
+          <div style="text-align:center;padding-top:20px;border-top:1px solid #e5e7eb;">
+            <p style="color:#6b7280;font-size:12px;margin:0;">You're receiving this because you subscribed to Raadhya Ethnica.<br/>Questions? <a href="mailto:support@raadhyaethnica.com" style="color:#D946EF;">support@raadhyaethnica.com</a></p>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:20px;color:#9ca3af;font-size:12px;"><p>© 2025 Raadhya Ethnica. All rights reserved.</p></div>
+      </body>
+    </html>`;
+
+  return sendEmail({
+    to: emails,
+    subject: `✨ New Arrival: ${product.name} — Shop Now!`,
+    html,
+  });
+}
+
+// ─── Hero / Special Offer Update Notification (bulk) ─────────────────────────
+export async function sendHeroUpdateEmail(
+  emails: string[],
+  details: {
+    productName: string;
+    badgeLabel: string;
+    badgeValue: string;
+    promoText?: string;
+    imageUrl?: string;
+    productSlug?: string;
+  }
+) {
+  if (!emails.length) return { success: true, sent: 0 };
+
+  const shopUrl = details.productSlug
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/products/${details.productSlug}`
+    : `${process.env.NEXT_PUBLIC_APP_URL}/products`;
+
+  const html = `<!DOCTYPE html>
+    <html>
+      <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+      <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+        <div style="background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+          <p style="color:rgba(255,255,255,0.9);margin:0 0 6px;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Raadhya Ethnica</p>
+          <h1 style="color:white;margin:0;font-size:30px;">🎁 ${details.badgeLabel}</h1>
+          <div style="display:inline-block;background:white;color:#7c3aed;padding:6px 20px;border-radius:30px;font-size:22px;font-weight:800;margin-top:12px;">${details.badgeValue}</div>
+        </div>
+        <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+          ${details.imageUrl ? `<div style="text-align:center;margin-bottom:24px;"><img src="${details.imageUrl}" alt="${details.productName}" style="max-width:280px;width:100%;border-radius:12px;object-fit:cover;"/></div>` : ""}
+          <div style="text-align:center;margin-bottom:24px;">
+            <h2 style="color:#111827;margin:0 0 10px;font-size:22px;">${details.productName}</h2>
+            ${details.promoText ? `<p style="color:#6b7280;margin:0;">${details.promoText}</p>` : ""}
+          </div>
+          <div style="background:linear-gradient(135deg,#f3e8ff,#ede9fe);border-radius:10px;padding:20px;text-align:center;margin-bottom:24px;">
+            <p style="margin:0;color:#6d28d9;font-size:18px;font-weight:700;">🛍️ Limited Time Offer</p>
+            <p style="margin:8px 0 0;color:#7c3aed;font-size:15px;">Don't miss out — grab this deal before it's gone!</p>
+          </div>
+          <div style="text-align:center;margin:24px 0;">
+            <a href="${shopUrl}" style="display:inline-block;background:#7c3aed;color:white;padding:14px 40px;text-decoration:none;border-radius:8px;font-weight:700;font-size:16px;">View Offer →</a>
+          </div>
+          <div style="text-align:center;padding-top:20px;border-top:1px solid #e5e7eb;">
+            <p style="color:#6b7280;font-size:12px;margin:0;">You're receiving this because you subscribed to Raadhya Ethnica.<br/>Questions? <a href="mailto:support@raadhyaethnica.com" style="color:#7c3aed;">support@raadhyaethnica.com</a></p>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:20px;color:#9ca3af;font-size:12px;"><p>© 2025 Raadhya Ethnica. All rights reserved.</p></div>
+      </body>
+    </html>`;
+
+  return sendEmail({
+    to: emails,
+    subject: `🎁 ${details.badgeLabel}: ${details.badgeValue} on ${details.productName}!`,
+    html,
+  });
+}

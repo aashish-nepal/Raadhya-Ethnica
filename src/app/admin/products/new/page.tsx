@@ -29,6 +29,12 @@ const OCCASIONS = [
 export default function AddProductPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+    const showToast = (message: string, type: "success" | "error" = "success") => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 4000);
+    };
     const [formData, setFormData] = useState({
         name: "",
         description: "",
@@ -115,7 +121,36 @@ export default function AddProductPage() {
                 updatedAt: new Date().toISOString(),
             };
 
-            await addProduct(productData);
+            const docRef = await addProduct(productData);
+
+            // ── Notify subscribers if this is a New Arrival ──────────────────
+            if (formData.isNewArrival) {
+                try {
+                    const res = await fetch("/api/email/new-arrival", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            productName: productData.name,
+                            price: productData.price,
+                            originalPrice: productData.originalPrice,
+                            discount: productData.discount,
+                            imageUrl: productData.images[0] || "",
+                            slug: productData.slug,
+                            shortDescription: productData.shortDescription,
+                        }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.sent > 0) {
+                        showToast(`✅ New arrival email sent to ${data.sent} subscribers!`);
+                        // Wait a moment so the toast is visible before navigating
+                        await new Promise((r) => setTimeout(r, 1800));
+                    }
+                } catch (emailErr) {
+                    console.error("Failed to send new arrival email:", emailErr);
+                    // Non-blocking — don't block the product save flow
+                }
+            }
+
             router.push("/admin/products");
         } catch (error) {
             console.error("Error adding product:", error);
@@ -240,6 +275,15 @@ export default function AddProductPage() {
 
     return (
         <div className="p-8">
+            {/* Toast Notification */}
+            {toast && (
+                <div
+                    className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium transition-all animate-fade-in ${toast.type === "success" ? "bg-green-600" : "bg-red-600"
+                        }`}
+                >
+                    {toast.type === "success" ? "✅" : "❌"} {toast.message}
+                </div>
+            )}
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
                 <Button

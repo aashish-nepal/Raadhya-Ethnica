@@ -6,6 +6,7 @@ import { ShoppingCart, Heart, User, Menu, X, Search, ChevronDown } from "lucide-
 import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useEffect, useState, useRef } from "react";
@@ -19,6 +20,7 @@ export default function Header() {
     const [scrolled, setScrolled] = useState(false);
     const [announcementText, setAnnouncementText] = useState(MARQUEE_TEXT);
     const { user } = useAuth();
+    const { openModal } = useModal();
     const cartItemsCount = useCartStore((state) => state.items.length);
     const wishlistItemsCount = useWishlistStore((state) => state.items.length);
 
@@ -43,14 +45,18 @@ export default function Header() {
         { name: "Casual Kurtas", href: "/products?category=casual" },
     ];
 
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            localStorage.removeItem("cart-storage");
-            window.location.href = "/";
-        } catch (error) {
-            console.error("Error signing out:", error);
-        }
+    const handleSignOut = () => {
+        openModal("sign-out", {
+            onConfirm: async () => {
+                try {
+                    await signOut(auth);
+                    localStorage.removeItem("cart-storage");
+                    window.location.href = "/";
+                } catch (error) {
+                    console.error("Error signing out:", error);
+                }
+            },
+        });
     };
 
     const marqueeContent = announcementText.repeat(4);

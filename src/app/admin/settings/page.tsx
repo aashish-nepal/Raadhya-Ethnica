@@ -108,6 +108,39 @@ export default function SettingsPage() {
             });
             setSuccessMessage("Hero settings saved!");
             setTimeout(() => setSuccessMessage(""), 3000);
+
+            // ── Send hero-update email to subscribers & previous customers ────────
+            const featuredProductId = settings.hero?.featuredProductId ?? "";
+            const badgeLabel = settings.hero?.badgeLabel ?? "Special Offer";
+            const badgeValue = settings.hero?.badgeValue ?? "";
+
+            // Only send if a featured product and a badge value are set
+            if (featuredProductId && badgeValue) {
+                const featuredProduct = products.find((p) => p.id === featuredProductId) as any;
+                if (featuredProduct) {
+                    try {
+                        const res = await fetch("/api/email/hero-update", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                productName: featuredProduct.name,
+                                badgeLabel,
+                                badgeValue,
+                                promoText: settings.hero?.promoText ?? "",
+                                imageUrl: featuredProduct.images?.[0] ?? "",
+                                productSlug: featuredProduct.slug ?? "",
+                            }),
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.sent > 0) {
+                            setSuccessMessage(`Hero settings saved! ✅ Special offer email sent to ${data.sent} subscribers.`);
+                            setTimeout(() => setSuccessMessage(""), 5000);
+                        }
+                    } catch (emailErr) {
+                        console.error("Hero update email failed (non-blocking):", emailErr);
+                    }
+                }
+            }
         } catch (error) {
             console.error("Error saving hero settings:", error);
             alert("Failed to save hero settings. Please try again.");

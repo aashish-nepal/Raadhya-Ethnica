@@ -3,14 +3,14 @@
 import { Product } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingCart, Eye } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils";
 import { useSettingsContext } from "@/contexts/SettingsContext";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface ProductCardProps {
     product: Product;
@@ -18,34 +18,51 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
     const [imageError, setImageError] = useState(false);
+    const [cartState, setCartState] = useState<"idle" | "added">("idle");
+    const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+    const btnRef = useRef<HTMLButtonElement>(null);
+    const rippleId = useRef(0);
+
     const isInWishlist = useWishlistStore((state) => state.isInWishlist(product.id));
     const toggleWishlist = useWishlistStore((state) => state.toggleItem);
     const addToCart = useCartStore((state) => state.addItem);
     const { settings } = useSettingsContext();
 
     const lowStockThreshold = settings?.inventory.lowStockThreshold || 10;
-
     const isLowStock = product.inStock && product.stockCount > 0 && product.stockCount <= lowStockThreshold;
 
-    const handleAddToCart = (e: React.MouseEvent) => {
+    const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
+        if (!product.inStock || cartState === "added") return;
 
-        if (!product.inStock) {
-            return; // Don't add if out of stock
+        // Ripple effect
+        const btn = btnRef.current;
+        if (btn) {
+            const rect = btn.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const id = ++rippleId.current;
+            setRipples(prev => [...prev, { id, x, y }]);
+            setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 600);
         }
 
-        // Add with default size and color
+        // Add to cart
         const defaultSize = product.sizes.find(s => s.inStock)?.size || product.sizes[0]?.size;
         const defaultColor = product.colors[0]?.name;
         if (defaultSize && defaultColor) {
             addToCart(product, defaultSize, defaultColor, 1);
         }
+
+        // Animate success state
+        setCartState("added");
+        setTimeout(() => setCartState("idle"), 2000);
     };
 
     const handleToggleWishlist = (e: React.MouseEvent) => {
         e.preventDefault();
         toggleWishlist(product.id);
     };
+
 
     return (
         <Link href={`/products/${product.slug}`} className="group block">
@@ -104,16 +121,47 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </button>
 
                     {/* Quick Actions - Show on Hover */}
-                    <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                            size="sm"
-                            className="flex-1"
+                    <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                        <button
+                            ref={btnRef}
                             onClick={handleAddToCart}
                             disabled={!product.inStock}
+                            className={`relative flex-1 overflow-hidden flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${!product.inStock
+                                    ? "bg-neutral-200 text-neutral-400 cursor-not-allowed"
+                                    : cartState === "added"
+                                        ? "bg-emerald-500 text-white scale-95 animate-success-glow"
+                                        : "bg-primary-600 hover:bg-primary-700 text-white active:scale-95"
+                                }`}
                         >
-                            <ShoppingCart size={16} className="mr-1" />
-                            {product.inStock ? "Add to Cart" : "Out of Stock"}
-                        </Button>
+                            {/* Ripple elements */}
+                            {ripples.map(r => (
+                                <span
+                                    key={r.id}
+                                    className="absolute rounded-full bg-white/30 pointer-events-none"
+                                    style={{
+                                        width: 8,
+                                        height: 8,
+                                        left: r.x - 4,
+                                        top: r.y - 4,
+                                        animation: 'cart-ripple 0.6s ease-out forwards',
+                                    }}
+                                />
+                            ))}
+
+                            {/* Icon */}
+                            <span className={`transition-all duration-300 ${cartState === "added" ? "scale-110" : ""}`}>
+                                {cartState === "added" ? (
+                                    <Check size={15} strokeWidth={2.5} />
+                                ) : (
+                                    <ShoppingCart size={15} />
+                                )}
+                            </span>
+
+                            {/* Text */}
+                            <span className="transition-all duration-300">
+                                {!product.inStock ? "Out of Stock" : cartState === "added" ? "Added!" : "Add to Cart"}
+                            </span>
+                        </button>
                         <Button
                             size="sm"
                             variant="outline"

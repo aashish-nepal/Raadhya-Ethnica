@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 
 interface StripeCheckoutFormProps {
     amount: number;
+    onProcessing?: () => void;
     onSuccess: (paymentIntentId: string) => void;
     onError: (error: string) => void;
 }
 
 export default function StripeCheckoutForm({
     amount,
+    onProcessing,
     onSuccess,
     onError,
 }: StripeCheckoutFormProps) {
@@ -33,6 +35,7 @@ export default function StripeCheckoutForm({
 
         setLoading(true);
         setErrorMessage("");
+        onProcessing?.();   // open the processing modal immediately
 
         try {
             const { error, paymentIntent } = await stripe.confirmPayment({

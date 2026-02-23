@@ -121,10 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await ensureCustomerDocument({ ...newUser, displayName: name } as User);
 
         // Send welcome email (fire-and-forget — never block sign-up)
-        fetch('/api/email/welcome', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, name }),
+        newUser.getIdToken().then((idToken) => {
+            fetch('/api/email/welcome', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ email, name }),
+            }).catch(console.error);
         }).catch(console.error);
     };
 

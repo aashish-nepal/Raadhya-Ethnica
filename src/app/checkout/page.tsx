@@ -13,10 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import type { Address } from "@/types";
 import StripeCheckoutForm from "@/components/payment/StripeCheckoutForm";
 import PayPalCheckout from "@/components/payment/PayPalCheckout";
 import { CreditCard, Wallet } from "lucide-react";
+import PaymentProcessingModal, { type PaymentModalStatus } from "@/components/ui/modals/PaymentProcessingModal";
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -34,6 +36,12 @@ export default function CheckoutPage() {
     const [useNewAddress, setUseNewAddress] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("stripe");
     const [clientSecret, setClientSecret] = useState<string>("");
+    const [paymentModal, setPaymentModal] = useState<{
+        open: boolean;
+        status: PaymentModalStatus;
+        orderId?: string;
+        errorMessage?: string;
+    }>({ open: false, status: "processing" });
 
     const [formData, setFormData] = useState({
         name: "",
@@ -169,20 +177,30 @@ export default function CheckoutPage() {
     };
 
     const handlePaymentSuccess = async (paymentId: string) => {
+        // Show processing modal immediately
+        setPaymentModal({ open: true, status: "processing" });
         try {
             if (!user) return;
 
-            // Prepare order items
-            const orderItems = items.map(item => ({
-                productId: item.productId,
-                productName: item.product.name,
-                productImage: item.product.images[0],
-                selectedSize: item.selectedSize,
-                selectedColor: item.selectedColor,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.price * item.quantity,
-            }));
+            // Prepare order items — use color-specific image when available
+            const orderItems = items.map(item => {
+                const colorData = item.product.colors?.find(
+                    (c) => c.name === item.selectedColor
+                );
+                const productImage =
+                    colorData?.images?.[0] || item.product.images[0];
+                return {
+                    productId: item.productId,
+                    productName: item.product.name,
+                    productImage,
+                    selectedSize: item.selectedSize,
+                    selectedColor: item.selectedColor,
+                    colorHex: colorData?.hex || null,
+                    quantity: item.quantity,
+                    price: item.price,
+                    total: item.price * item.quantity,
+                };
+            });
 
             // Get shipping address
             const shippingAddr = getShippingAddress();
@@ -236,35 +254,39 @@ export default function CheckoutPage() {
                     }).catch(console.error);
                 }).catch(console.error);
 
-                // Clear cart from local storage
-                clearCart();
-
-                // Clear cart from Firestore
-                await clearCartFromFirestore(user.uid);
-
                 // Redirect to confirmation page
-                router.push(`/order-confirmation?paymentId=${paymentId}&orderId=${orderResult.orderId}`);
+                clearCart();
+                await clearCartFromFirestore(user.uid);
+                // Transition modal to success before redirect
+                setPaymentModal({ open: true, status: "success", orderId: orderResult.orderId });
+                // Give user a moment to see the success modal, then redirect
+                setTimeout(() => {
+                    router.push(`/order-confirmation?paymentId=${paymentId}&orderId=${orderResult.orderId}`);
+                }, 2500);
             } else {
                 console.error('Failed to create order:', orderResult.error);
-                // Still redirect but show warning
                 clearCart();
                 await clearCartFromFirestore(user.uid);
-                router.push(`/order-confirmation?paymentId=${paymentId}`);
+                setPaymentModal({ open: true, status: "success", orderId: undefined });
+                setTimeout(() => {
+                    router.push(`/order-confirmation?paymentId=${paymentId}`);
+                }, 2500);
             }
         } catch (error) {
             console.error("Error handling payment success:", error);
-            // Still clear cart and redirect even if order creation fails
             clearCart();
-            if (user) {
-                await clearCartFromFirestore(user.uid);
-            }
-            router.push(`/order-confirmation?paymentId=${paymentId}`);
+            if (user) await clearCartFromFirestore(user.uid);
+            setPaymentModal(prev => ({ ...prev, status: "error", errorMessage: "Something went wrong. Your payment may have been captured — please check your email." }));
         }
     };
 
 
     const handlePaymentError = (error: string) => {
-        alert(`Payment failed: ${error}`);
+        setPaymentModal({ open: true, status: "error", errorMessage: error });
+    };
+
+    const handleProcessingStart = () => {
+        setPaymentModal({ open: true, status: "processing" });
     };
 
     if (authLoading) {
@@ -462,6 +484,7 @@ export default function CheckoutPage() {
                                             <Elements stripe={stripePromise} options={{ clientSecret }}>
                                                 <StripeCheckoutForm
                                                     amount={Math.round(totals.total * 100)}
+                                                    onProcessing={handleProcessingStart}
                                                     onSuccess={handlePaymentSuccess}
                                                     onError={handlePaymentError}
                                                 />
@@ -492,17 +515,72 @@ export default function CheckoutPage() {
                             <div className="bg-white rounded-xl p-6 shadow-soft sticky top-24">
                                 <h2 className="text-xl font-display font-bold mb-4">Order Summary</h2>
 
-                                {/* Items */}
-                                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                                    {items.map((item) => (
-                                        <div key={`${item.productId}-${item.selectedSize}-${item.selectedColor}`} className="flex justify-between text-sm">
-                                            <span className="text-neutral-600">
-                                                {item.product.name} x {item.quantity}
-                                            </span>
-                                            <span className="font-semibold">{formatPrice(item.price * item.quantity)}</span>
-                                        </div>
-                                    ))}
+                                {/* Item Breakdown */}
+                                <div className="space-y-3 mb-5 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
+                                    {items.map((item) => {
+                                        // Find the color data for this cart item to get hex + color-specific images
+                                        const colorData = item.product.colors?.find(
+                                            (c) => c.name === item.selectedColor
+                                        );
+                                        const thumbnailSrc =
+                                            colorData?.images?.[0] ||
+                                            item.product.images[0];
+                                        const colorHex = colorData?.hex;
+
+                                        return (
+                                            <div
+                                                key={`${item.productId}-${item.selectedSize}-${item.selectedColor}`}
+                                                className="flex gap-3 items-start"
+                                            >
+                                                {/* Thumbnail – shows color-specific image */}
+                                                <div className="relative w-12 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-200">
+                                                    <Image
+                                                        src={thumbnailSrc}
+                                                        alt={`${item.product.name} - ${item.selectedColor}`}
+                                                        fill
+                                                        sizes="48px"
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+
+                                                {/* Details */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold text-neutral-800 truncate leading-tight">
+                                                        {item.product.name}
+                                                    </p>
+                                                    {/* Color · Size · Qty chips */}
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {item.selectedColor && (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-neutral-100 text-neutral-600 rounded-full px-2 py-0.5">
+                                                                <span
+                                                                    className="w-2 h-2 rounded-full border border-neutral-300 flex-shrink-0"
+                                                                    style={{
+                                                                        backgroundColor: colorHex || item.selectedColor.toLowerCase(),
+                                                                    }}
+                                                                />
+                                                                {item.selectedColor}
+                                                            </span>
+                                                        )}
+                                                        {item.selectedSize && (
+                                                            <span className="text-[10px] font-medium bg-neutral-100 text-neutral-600 rounded-full px-2 py-0.5">
+                                                                Size: {item.selectedSize}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] font-bold bg-primary-100 text-primary-700 rounded-full px-2 py-0.5">
+                                                            Qty: {item.quantity}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Line total */}
+                                                <p className="text-sm font-bold text-neutral-900 flex-shrink-0">
+                                                    {formatPrice(item.price * item.quantity)}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+
 
                                 <div className="border-t border-neutral-200 pt-4 space-y-3">
                                     <div className="flex justify-between text-neutral-600">
@@ -532,6 +610,17 @@ export default function CheckoutPage() {
             </div>
 
             <WhatsAppButton />
+
+            {/* Payment Processing Modal */}
+            {paymentModal.open && (
+                <PaymentProcessingModal
+                    status={paymentModal.status}
+                    amount={totals.total}
+                    orderId={paymentModal.orderId}
+                    errorMessage={paymentModal.errorMessage}
+                    onClose={() => setPaymentModal(prev => ({ ...prev, open: false }))}
+                />
+            )}
         </>
     );
 }

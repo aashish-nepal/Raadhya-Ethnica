@@ -46,10 +46,10 @@ service cloud.firestore {
     match /customers/{customerId} {
       allow read: if isOwner(customerId) || isAdmin();
       allow create: if isSignedIn() &&
-        // Prevent creating a document with someone else's uid or with admin role
+        // Prevent creating a document with someone else's uid or elevating to admin
         customerId == request.auth.uid &&
         (!request.resource.data.keys().hasAny(['role']) ||
-         request.resource.data.role == 'customer');
+         request.resource.data.role in ['user', 'customer']);
       allow update: if isSignedIn() && (
         // Users can update their OWN data but CANNOT change their role
         (isOwner(customerId) &&

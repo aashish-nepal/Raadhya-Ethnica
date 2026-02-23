@@ -5,11 +5,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
 import { getFirebaseAuthError } from "@/lib/firebase-errors";
 import { Mail, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
 
 function ForgotPasswordContent() {
     const { resetPassword } = useAuth();
+    const { openModal } = useModal();
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -23,6 +25,7 @@ function ForgotPasswordContent() {
         try {
             await resetPassword(email);
             setSent(true);
+            openModal("password-reset", { email });
         } catch (err: any) {
             setError(getFirebaseAuthError(err));
         } finally {
