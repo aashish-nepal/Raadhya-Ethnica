@@ -4,18 +4,13 @@ import { X, CheckCircle, ShoppingBag, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { OrderConfirmationData } from "@/contexts/ModalContext";
+import { formatPrice } from "@/lib/utils";
 
 interface Props {
     data: OrderConfirmationData;
     onClose: () => void;
 }
 
-function formatCurrency(amount: number) {
-    return new Intl.NumberFormat("en-AU", {
-        style: "currency",
-        currency: "AUD",
-    }).format(amount);
-}
 
 export default function OrderConfirmationModal({ data, onClose }: Props) {
     const { orderId, total, itemCount } = data ?? {};
@@ -76,7 +71,7 @@ export default function OrderConfirmationModal({ data, onClose }: Props) {
                         <div className="flex justify-between items-center px-5 py-3">
                             <span className="text-sm text-neutral-500">Total Paid</span>
                             <span className="font-bold text-lg text-neutral-900">
-                                {formatCurrency(total)}
+                                {formatPrice(total)}
                             </span>
                         </div>
                     </div>

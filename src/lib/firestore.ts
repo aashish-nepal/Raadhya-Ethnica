@@ -883,27 +883,8 @@ export async function createOrder(orderData: {
     }
 }
 
-/**
- * Get order by ID
- */
-export async function getOrderById(orderId: string) {
-    try {
-        const orderRef = doc(db, COLLECTIONS.ORDERS, orderId);
-        const snapshot = await getDoc(orderRef);
-
-        if (!snapshot.exists()) {
-            return null;
-        }
-
-        return {
-            id: snapshot.id,
-            ...snapshot.data(),
-        };
-    } catch (error) {
-        console.error('Error getting order:', error);
-        return null;
-    }
-}
+/** Alias for getOrder — prefer this name in newer code */
+export const getOrderById = getOrder;
 
 /**
  * Get order by payment ID

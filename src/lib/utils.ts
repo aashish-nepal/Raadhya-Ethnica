@@ -79,7 +79,7 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Validate Indian phone number
+ * Validate Australian phone number
  */
 export function isValidPhone(phone: string): boolean {
     // Australian mobile: 04xxxxxxxx (10 digits) or +614xxxxxxxx
@@ -88,7 +88,7 @@ export function isValidPhone(phone: string): boolean {
 }
 
 /**
- * Validate Indian pincode
+ * Validate Australian postcode
  */
 export function isValidPincode(postcode: string): boolean {
     // Australian postcode: 4 digits
