@@ -13,8 +13,8 @@ import ClientLayoutWrapper from "@/components/layout/ClientLayoutWrapper";
 import { ModalProvider } from "@/contexts/ModalContext";
 
 export const metadata: Metadata = {
-    title: "Raadhya Ethnica - Authentic Indian Ethnic Wear",
-    description: "Shop the finest collection of traditional Indian ethnic wear including kurtas, salwar kameez, and more. Free shipping on orders over $150.",
+    title: "Raadhya Ethnica - Traditional Outfits",
+    description: "Shop the finest collection of traditional, ethnic wear including kurtas, salwar kameez, and more. Free shipping on orders over $150.",
 };
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
