@@ -63,7 +63,7 @@
 
   /* ===== Layout ===== */
   .container-custom {
-    @apply max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-4;
+    @apply max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
   /* ===== Scrollbar ===== */
