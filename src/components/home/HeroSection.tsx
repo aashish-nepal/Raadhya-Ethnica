@@ -49,7 +49,7 @@ export default function HeroSection() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-pink-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" style={{ animationDelay: "4s" }} />
             </div>
 
-            <div className="container-custom relative py-16 md:py-20 lg:py-24 w-full">
+            <div className="container-custom relative py-12 md:py-12 lg:py-12 w-full">
                 <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
                     {/* ── TEXT CONTENT ── */}

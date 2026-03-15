@@ -73,13 +73,13 @@ export default function Header() {
 
             {/* Main Header */}
             <div className="container-custom">
-                <div className="flex items-center justify-between py-3.5 gap-4">
+                <div className="flex items-center justify-between py-2 gap-4">
                     {/* Logo */}
                     <Link href="/" className="flex-shrink-0 group transition-transform duration-200 hover:scale-105">
                         <Image
                             src="/logo.png"
                             alt="Raadhya Ethnica"
-                            width={260}
+                            width={200}
                             height={100}
                             className="h-16 w-auto object-contain"
                             priority
@@ -213,7 +213,7 @@ export default function Header() {
                 </div>
 
                 {/* Desktop Navigation */}
-                <nav className="hidden lg:flex items-center gap-1 py-2.5 border-t border-neutral-100">
+                <nav className="hidden lg:flex items-center gap-1 py-1.5 border-t border-neutral-100">
                     <Link href="/products" className="px-4 py-2 rounded-lg text-sm font-semibold text-neutral-900 hover:bg-primary-50 hover:text-primary-700 transition-colors">
                         All Products
                     </Link>
